@@ -141,22 +141,11 @@ var CookieCheat = {
     golden: {
         playChime: true,
         playedChimeOnce: false,
-        choices: Game.goldenCookieChoices.concat(['Cheaper buildings', 'everything must go']),
         spawn: function() {
             var select = document.getElementById('golden-choices');
             var selectedEffect = select.options[select.selectedIndex].value;
             var golden = new Game.shimmer('golden');
             golden.force = selectedEffect;
-        },
-        listChoices: function() {
-            var goldenChoices = [];
-            for (var i = 0; i < this.choices.length; i++) {
-                goldenChoices.push({
-                    name: this.choices[i],
-                    id: this.choices[++i]
-                });
-            }
-            return goldenChoices;
         },
         canSpawn: function() {
             if (Game.shimmerTypes.golden.time === 0) {
@@ -173,33 +162,46 @@ var CookieCheat = {
                 return 0;
             }
         },
-        currentChoices: function() {
-            var list = ['click frenzy', 'blab'];
+        choices: {
+            all: Game.goldenCookieChoices.concat(['Cheaper buildings', 'everything must go']),
+            list: function() {
+                var choices = [];
+                for (var i = 0; i < this.all.length; i++) {
+                    choices.push({
+                        name: this.all[i],
+                        id: this.all[++i]
+                    });
+                }
+                return choices;
+            },
+            current: function() {
+                var list = ['click frenzy', 'blab'];
 
-            if (Game.elderWrath > 0) {
-                list.push('clot', 'multiply cookies', 'ruin cookies', 'blood frenzy', 'chain cookie', 'cookie storm', 'cursed finger');
-            } else {
-                list.push('frenzy', 'multiply cookies');
-                if (Game.cookiesEarned >= 100000) {
-                    list.push('chain cookie', 'cookie storm');
+                if (Game.elderWrath > 0) {
+                    list.push('clot', 'multiply cookies', 'ruin cookies', 'blood frenzy', 'chain cookie', 'cookie storm', 'cursed finger');
+                } else {
+                    list.push('frenzy', 'multiply cookies');
+                    if (Game.cookiesEarned >= 100000) {
+                        list.push('chain cookie', 'cookie storm');
+                    }
+                    if (Game.hasAura('Reaper of Fields')) {
+                        list.push('dragon harvest');
+                    }
+                    if (Game.hasAura('Dragonflight')) {
+                        list.push('dragonflight');
+                    }
                 }
-                if (Game.hasAura('Reaper of Fields')) {
-                    list.push('dragon harvest');
+                if (Game.season == 'fools') {
+                    list.push('everything must go');
                 }
-                if (Game.hasAura('Dragonflight')) {
-                    list.push('dragonflight');
+                if (Game.BuildingsOwned >= 10) {
+                    list.push('building special');
                 }
-            }
-            if (Game.season == 'fools') {
-                list.push('everything must go');
-            }
-            if (Game.BuildingsOwned >= 10) {
-                list.push('building special');
-            }
-            if (Game.shimmerTypes.golden.last != '' && list.indexOf(Game.shimmerTypes.golden.last) != -1) {
-                list.splice(list.indexOf(Game.shimmerTypes.golden.last), 1); // 80% chance to force a different one
-            }
-            return list;
+                if (Game.shimmerTypes.golden.last != '' && list.indexOf(Game.shimmerTypes.golden.last) != -1) {
+                    list.splice(list.indexOf(Game.shimmerTypes.golden.last), 1); // 80% chance to force a different one
+                }
+                return list;
+            },
         },
         autoClick: {
             spawned: function() {
@@ -265,6 +267,19 @@ var CookieCheat = {
                 btn.textContent = 'Turn on auto clicker';
                 clearInterval(CookieCheat.intervals.goldenAutoClick);
                 delete CookieCheat.intervals.goldenAutoClick;
+            }
+        },
+        html: {
+            select: function() {
+                var options = '<option value="">Random</option>';
+                CookieCheat.golden.choices.list().forEach(function(el, index) {
+                    options += '<option value="' + el.id + '">' + el.name + '</option>';
+                });
+                return options;
+            },
+            build: function() {
+                var select = document.getElementById('golden-choices');
+                select.innerHTML = this.select();
             }
         }
     },
@@ -684,14 +699,14 @@ var CookieCheat = {
         var elders = '<div id="reset-pledge"><h3 class="cheat-title titleFont">Elder pledge</h3>' + pledgeTime + '<button class="full-w" onclick="CookieCheat.pledges.reset();" id="reset-pledges-button">Reset</button></div>';
         var wrinklers = '<div id="wrinklers"><h3 class="cheat-title titleFont">Wrinklers</h3><button class="full-w" onclick="CookieCheat.wrinklers.spawn(1);">Spawn one</button><button class="full-w" onclick="CookieCheat.wrinklers.spawn();">Spawn all</button><button class="full-w" onclick="Game.CollectWrinklers();">Collect all</button></div>';
 
-        var goldenSelect = function() {
-            var options = '<option value="">Random</option>';
-            CookieCheat.golden.listChoices().forEach(function(el, index) {
-                options += '<option value="' + el.id + '">' + el.name + '</option>';
-            });
-            var select = '<select name="" id="golden-choices">' + options + '</select>';
-            return select;
-        }
+        // var goldenSelect = function() {
+        //     var options = '<option value="">Random</option>';
+        //     CookieCheat.golden.choices.list().forEach(function(el, index) {
+        //         options += '<option value="' + el.id + '">' + el.name + '</option>';
+        //     });
+        //     var select = '<select name="" id="golden-choices">' + options + '</select>';
+        //     return select;
+        // }
         var goldenCanSpawnInterval = setInterval(function() {
             var goldenClass = '';
             if (CookieCheat.golden.canSpawn() === 1 && !Game.Has('Golden switch [off]')) {
@@ -712,9 +727,9 @@ var CookieCheat = {
         var lastGolden = '<h3 class="titleFont">Previous effect: <span id="last-golden"></span></h3>';
         var goldenTime = '<h3 id="golden-time-min" class="titleFont">Min:</h3><h3 id="golden-time-max" class="titleFont">Max:</h3><h3 id="golden-time-current" class="titleFont">Time:</h3>';
         var autoClickGolden = '<button class="full-w" id="golden-auto-clicker" onclick="CookieCheat.golden.autoClick.toggle();">Turn on auto clicker</button>';
-        var golden = '<div id="spawn-golden"><h3 id="golden-cookie-title" class="cheat-title titleFont" onmouseout="Game.tooltip.shouldHide=1;" onmouseover="Game.tooltip.dynamic=1;Game.tooltip.draw(this, function() { return Game.crate({icon: [23,6], desc: (function() { return \'<p class=&quot;capitalize&quot;><b>\' + CookieCheat.golden.currentChoices().join(\'</b></p><p class=&quot;capitalize&quot;><b>\') + \'</b></p>\'; })(), name: \'Currently available effects\', type: \'upgrade\', pool: \'tech\', canBuy: function() { return false; }, getPrice: function() { return 0; } }, \'store\', undefined, undefined, 1)(); }, \'store\');Game.tooltip.wobble();">' + ((Game.elderWrath > 0) ? 'Wrath' : 'Golden') + ' cookie</h3>' + lastGolden + goldenTime + goldenSelect() + '<button onclick="CookieCheat.golden.spawn();" id="spawn-golden-button">Spawn</button>' + autoClickGolden + '</div>';
-        // var arr = []; CookieCheat.golden.currentChoices().forEach(function(element, index) { arr.push(\'<p>\' + element + \'</p>\'); }); return arr.join(\'\'); // Alternative tooltip function
-        // function() { return Game.crate({icon: [10, 14], desc: function() { return \'<p>\' + CookieCheat.golden.currentChoices().join(\'</p><p>\') + \'</p>\'; }, name: \'Currently available effects\'}, 'store', undefined, undefined, 1)(); }
+        var golden = '<div id="spawn-golden"><h3 id="golden-cookie-title" class="cheat-title titleFont" onmouseout="Game.tooltip.shouldHide=1;" onmouseover="Game.tooltip.dynamic=1;Game.tooltip.draw(this, function() { return Game.crate({icon: [23,6], desc: (function() { return \'<p class=&quot;capitalize&quot;><b>\' + CookieCheat.golden.choices.current().join(\'</b></p><p class=&quot;capitalize&quot;><b>\') + \'</b></p>\'; })(), name: \'Currently available effects\', type: \'upgrade\', pool: \'tech\', canBuy: function() { return false; }, getPrice: function() { return 0; } }, \'store\', undefined, undefined, 1)(); }, \'store\');Game.tooltip.wobble();">' + ((Game.elderWrath > 0) ? 'Wrath' : 'Golden') + ' cookie</h3>' + lastGolden + goldenTime + '<select name="" id="golden-choices">' + this.golden.html.select() + '</select><button onclick="CookieCheat.golden.spawn();" id="spawn-golden-button">Spawn</button>' + autoClickGolden + '</div>';
+        // var arr = []; CookieCheat.golden.choices.current().forEach(function(element, index) { arr.push(\'<p>\' + element + \'</p>\'); }); return arr.join(\'\'); // Alternative tooltip function
+        // function() { return Game.crate({icon: [10, 14], desc: function() { return \'<p>\' + CookieCheat.golden.choices.current().join(\'</p><p>\') + \'</p>\'; }, name: \'Currently available effects\'}, 'store', undefined, undefined, 1)(); }
 
         var heavenly = '<div id="add-heavenly-chips"><h3 class="cheat-title titleFont">Heavenly chips</h3><input id="add-heavenly-amount" type="number" value="10"><button onclick="CookieCheat.heavenly.add();" id="add-heavenly-button">Add</button></div>';
         var buffs = '<div id="edit-buffs"><h3 class="cheat-title titleFont">Buffs</h3><button class="full-w" onclick="CookieCheat.buffs.stop.all();">Stop</button></div>';
